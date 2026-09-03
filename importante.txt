@@ -1,0 +1,91 @@
+ESTAS EJECUCIONES SE DEBEN REALIZAR UNA UNICA VEZ YA QUE SOLO FUNCIONAN PARA LA PRIMERA MIGRACION
+Y SI SE EJECUTAN POR SEGUNDA VEZ PUEDEN TENER PROBLEMAS POR LAS CLAVES FORANEAS.
+
+
+AL CREAR LOS ARCHIVOS DE CADA UNA DE LAS MIGRACIONES EJECUTAR
+dotnet build
+
+
+ORDEN RECOMENDADO PARA EJECUTAR LAS MIGRACIONES POR PRIMERAS (EJECUTAR UNA UNICA VEZ)
+dotnet run -- localidades
+dotnet run -- plancuentas
+dotnet run -- categoriasiva
+dotnet run -- agruprove
+dotnet run -- proveedores
+dotnet run -- sectores
+dotnet run -- gruposautorizacion
+dotnet run -- comprobantes
+dotnet run -- plancuentasrela
+dotnet run -- rubroporcuenta
+dotnet run -- gruposproducto
+dotnet run -- subgruposproduc
+dotnet run -- productos
+dotnet run -- existencias
+
+FALTARIAN: (QUE YA ESTAN MIGRADOS CON INSERTS NORMALES)
+--> LOS INSERT NORMALES SON PARA LOS QUE TENIAN UNA O DOS FILAS O PARA LOS QUE SON TABLAS NUEVAS
+
+#### MODULOCENTRAL
+UNIDADESOPERATIVAS --> MANTENIMIENTO.M_CENTROCOSTO (atributos DISTRITO CODDISTRITO serian mi unidad operativa) --> GESP   ///   -- inner join de auxiliares y compras_compro_ccosto (COSAYSA)  --> TRAIGO DEL GESP
+dotnet run -- localidades --> TENEMOS DOS TABLAS DE LOCALIDAD --> UNA EN AMERICA(SE LLAMA LOCALIDADES) Y OTRA EN EL GESP(GESTION.LOCALIDADES)  --> SE QUEDAMOS CON LA DEL GESP
+UNIDADESMEDIDA     --> TABLA NUEVA 
+DISTRITOSCOMPRA    --> ES LA MISMA TABLA QUE HAY QUE UNIFICAR --> ES MAS FACIL ACTUALIZARLA EN INVENTARIO (SE TENEMOS QUE QUEDAR CON ESTA TABLA)  (SERIA UNIDADESOPERATIVAS)
+ejecutamos dotnet run -- gruposproducto
+ejecutamos dotnet run -- subgruposproduc
+ejecutamos dotnet run -- plancuentas
+ejecutamos dotnet run -- productos
+
+#### SISTEMA INVENTARIO
+ORGANIGRAMATIPO         --> TABLA NUEVA  
+ORGANIGRAMA             --> TABLA NUEVA  
+DEPOSITOS               --> TABLAS DEPOSITOS DE COSAYSA 
+TIPOSFUENTE             --> SALEN DEL GESP  (PRODUCCION.TIPOS_FUENTE)             <--  CREO QUE LO QUE VIENE DEL GESP LO VOY A TENER QUE TRAER COMO DATAVIEW!!!
+FUENTESABASTECIMIENTO   --> SALEN DEL GESP  (DATASTORE5.RELFUENTES_CATASTROSDGI)  --> aqui esta todo columnas(ID_FUENTE,  NOMBRE_FUENTE,  UBICACION,  DESC_BAR, DESC_TIPO_FUENTE,  ESTADO_FUENTE,  LNG AS LONGITUD,  LAT AS LATITUD,  FEATID_FTE, ID_LOC, TIPO_UBICACION)
+UNIDADESPRESUPUESTARIAS --> VER MAÑANA
+UNIPRESUXDISTR          --> VER MAÑANA
+ejecutamos dotnet run -- existencias
+
+#### MODULOPRESUPUESTOS
+ejecutamos dotnet run -- categoriasiva
+ejecutamos dotnet run -- agruprove
+ejecutamos dotnet run -- proveedores
+GRUPOSCOMPRA           --> SALE DE LA TABLA AUXILIARES
+CENTROCOSTO            --> SALE DE LA TABLA AUXILIARES
+ejecutamos dotnet run -- sectores
+MODULOS
+COMPROBANTESCLASE
+ejecutamos dotnet run -- gruposautorizacion
+PROYECTOSCOMPRA
+ASIENTODESCRIPCION
+ASIENTOORIGEN
+ASIENTOTIPOS
+MONEDAS
+EJERCICIOS
+PRESUESTRUCINFO
+PRESUPUESTOS
+ejecutamos dotnet run -- plancuentasrela
+CONFIGURACIONCONTA
+PERIODOS
+ejecutamos dotnet run -- comprobantes
+CONFIGPRESU
+ejecutamos dotnet run -- rubroporcuenta
+
+
+
+POR OTRO LADO TAMBIEN ACTUALICE TOMCAT:
+EL ARCHIVO <Tomcat>\conf\web.xml
+    <session-config>
+        <session-timeout>30</session-timeout>
+    </session-config>
+PASANDO DE 30 A 90 
+
+CONSULTAS QUE HICE EN EL TOAD:
+select * from PRODUCCION.FUENTES_ABASTECIMIENTO;
+select * from PRODUCCION.TIPOS_FUENTE;
+select * from GESTION.LOCALIDADES;
+select * from MANTENIMIENTO.M_CENTROCOSTO;
+select * from GESTION.TIPOS_ORGANISMO;
+
+
+
+
