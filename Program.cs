@@ -777,6 +777,47 @@ try
                 break;
             }
 
+            case "depositos":
+            {
+                if (string.IsNullOrWhiteSpace(sqlServerConnection))
+                {
+                    Log.Error(
+                        "No se puede ejecutar la migración: falta la conexión a SQL Server."
+                    );
+
+                    break;
+                }
+
+                if (string.IsNullOrWhiteSpace(oracleConnection))
+                {
+                    Log.Error(
+                        "No se puede ejecutar la migración: falta la conexión a Oracle."
+                    );
+
+                    break;
+                }
+
+                Log.Information(
+                    "Ejecutando migración DESPOSITOS -> DEPOSITOS."
+                );
+
+                var sqlServerDatabase =
+                    new SqlServerDatabase(sqlServerConnection);
+
+                var oracleDatabase =
+                    new OracleDatabase(oracleConnection);
+
+                var migration =
+                    new DepositosMigration(
+                        sqlServerDatabase,
+                        oracleDatabase
+                    );
+
+                await migration.EjecutarAsync();
+
+                break;
+            }
+
             case "gruposproducto":
             {
                 if (string.IsNullOrWhiteSpace(sqlServerConnection))
