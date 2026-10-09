@@ -980,7 +980,48 @@ try
                 await migration.EjecutarAsync();
 
                 break;
-            }            
+            }  
+
+            case "fuentesabastecimiento":
+            {
+                if (string.IsNullOrWhiteSpace(sqlServerConnection))
+                {
+                    Log.Error(
+                        "No se puede ejecutar la migración: falta la conexión a SQL Server."
+                    );
+
+                    break;
+                }
+
+                if (string.IsNullOrWhiteSpace(oracleConnection))
+                {
+                    Log.Error(
+                        "No se puede ejecutar la migración: falta la conexión a Oracle."
+                    );
+
+                    break;
+                }
+
+                Log.Information(
+                    "Ejecutando migración FUENTES_ABASTECIMIENTO -> FUENTESABASTECIMIENTO."
+                );
+
+                var sqlServerDatabase =
+                    new SqlServerDatabase(sqlServerConnection);
+
+                var oracleDatabase =
+                    new OracleDatabase(oracleConnection);
+
+                var migration =
+                    new FuentesAbastecimientoMigration(
+                        //sqlServerDatabase,
+                        oracleDatabase
+                    );
+
+                await migration.EjecutarAsync();
+
+                break;
+            }                       
 
             default:
             {
