@@ -118,7 +118,7 @@ public class LocalidadesMigration
                 L.ID_LOC,
                 L.DESC_LOC,
                 L.COD_POSTAL,
-                UO.CODIGO_AM
+                UO.CODIGO_AM,
             FROM GESTION.LOCALIDADES L
             LEFT JOIN GESTION.UNIDADOPERATIVA UO ON L.ID_UOP = UO.ID_UOP  
             WHERE ID_PROV = 1
@@ -171,6 +171,7 @@ public class LocalidadesMigration
         return resultado;
     }
 
+// DE AQUI SACO LOCALIDADESCODIGO (DE ENTRADA NO COINCIDEN CON LOS CODIGOS (CODIGO_AM) QUE ESTAN CARGADOS EN EL GESP)
 private async Task<Dictionary<string, string?>> LeerCodigosLocalidadesSqlServerAsync()
 {
     var resultado =

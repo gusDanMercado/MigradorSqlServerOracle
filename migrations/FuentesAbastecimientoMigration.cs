@@ -30,7 +30,12 @@ public class FuentesAbastecimientoMigration
             "Se leyeron {Cantidad} registros desde PRODUCCION.FUENTES_ABASTECIMIENTO.",
             FuentesAbastecimientoOrigen.Count);
 
-        await InsertarOracleAsync(FuentesAbastecimientoOrigen);
+        var Localidades =
+            await CargarLocalidadesAsync();
+        Log.Information(
+            "Se leyeron {Cantidad} registros desde Oracle (Localidades).", Localidades.Count);
+
+        await InsertarOracleAsync(FuentesAbastecimientoOrigen, Localidades);
 
         Log.Information(
             "Migración PRODUCCION.FUENTES_ABASTECIMIENTO -> FUENTESABASTECIMIENTO finalizada correctamente.");
@@ -48,7 +53,7 @@ public class FuentesAbastecimientoMigration
 
         const string sql = """
             SELECT 
-                fa.DENOMINACION,
+                DISTINCT(fa.DENOMINACION),
                 fa.ID_TIPO_FUENTE,
                 fa.ID_LOC,
                 fa.NIS,
@@ -100,8 +105,65 @@ public class FuentesAbastecimientoMigration
         return resultado;
     }
 
+    private async Task<Dictionary<int, int>> CargarLocalidadesAsync()
+    {
+        var resultado = new Dictionary<int, int>();
+
+        await using var connection =
+            _oracleDatabase.CrearConexion();
+
+        await connection.OpenAsync();
+
+        const string sql = """
+            SELECT
+                LOCALIDADESIDGESP,
+                LOCALIDADESID
+            FROM LOCALIDADES
+        """;
+
+        await using var command =
+            new OracleCommand(sql, connection);
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            var idgesp =
+                Convert.ToInt32(
+                    reader["LOCALIDADESIDGESP"]);
+
+            var id =
+                Convert.ToInt32(
+                    reader["LOCALIDADESID"]);
+
+            resultado[idgesp] = id;
+        }
+
+        return resultado;
+    }    
+
+    private static int ObtenerLocalidadesId(
+        int idgesp,
+        Dictionary<int, int> Localidades)
+    {
+
+        if (Localidades.TryGetValue(
+                idgesp,
+                out var id))
+        {
+            return id;
+        }
+
+        throw new InvalidOperationException(
+            $"No se encontró Localidad con código '{idgesp}'."
+        );
+    }
+
     private async Task InsertarOracleAsync(
-        List<FuentesAbastecimientoOracle> FuentesAbastecimiento)
+        List<FuentesAbastecimientoOracle> FuentesAbastecimiento,
+        Dictionary<int, int> Localidades
+    )
     {
         await using var connection =
             _oracleDatabase.CrearConexion();
@@ -171,7 +233,8 @@ public class FuentesAbastecimientoMigration
                 command.Parameters.Add(
                     "ID_LOC",
                     OracleDbType.Int32
-                ).Value = FuenteAbastecimiento.ID_LOC;
+                ).Value = ObtenerLocalidadesId(FuenteAbastecimiento.ID_LOC, Localidades);  
+                //FuenteAbastecimiento.ID_LOC;
 
                 command.Parameters.Add(
                     "NIS",
