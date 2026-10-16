@@ -22,6 +22,7 @@ dotnet run -- subgruposproduc
 dotnet run -- productos
 dotnet run -- existencias
 dotnet run -- fuentesabastecimiento
+dotnet run -- depositos
 
 FALTARIAN: (QUE YA ESTAN MIGRADOS CON INSERTS NORMALES)
 --> LOS INSERT NORMALES SON PARA LOS QUE TENIAN UNA O DOS FILAS O PARA LOS QUE SON TABLAS NUEVAS

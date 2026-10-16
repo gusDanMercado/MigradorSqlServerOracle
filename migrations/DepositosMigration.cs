@@ -179,7 +179,7 @@ public class DepositosMigration
         {
             { "SALTA", "CAPITAL - SALTA" },
             { "CAMPAMENTO VESPUCIO", "VESPUCIO" },
-            { "J. V. GONZALEZ", "JVGONZALEZ" },
+            { "J. V. GONZALEZ", "J.V.GONZALEZ" },
             { "SAN RAMON DE LA NUEVA ORAN", "S R DE LA NUEVA ORAN" }
         };
 
