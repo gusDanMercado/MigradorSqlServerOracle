@@ -38,12 +38,27 @@ public class ProductosMigration
         Log.Information(
             "Se leyeron {Cantidad} registros desde Oracle (UnidadesMedida).", UnidadesMedida.Count);
 
+        var GruposProduc =
+            await CargarGruposProducAsync();
+
+        Log.Information(
+            "Se leyeron {Cantidad} registros desde Oracle (GruposProduc).",
+            GruposProduc.Count);
+
+        var SubGruposProduc =
+            await CargarSubGruposProducAsync();
+
+        Log.Information(
+            "Se leyeron {Cantidad} registros desde Oracle (SubGruposProduc).",
+            SubGruposProduc.Count);
+
+        /*
         var SubGruposProduc =
             await CargarSubGruposProducAsync();
         Log.Information(
             "Se leyeron {Cantidad} registros desde Oracle (SubGruposProduc).", SubGruposProduc.Count);
-
-        var ProductosDestino = Transformar(ProductosOrigen, UnidadesMedida, SubGruposProduc);
+        */
+        var ProductosDestino = Transformar(ProductosOrigen, UnidadesMedida, GruposProduc, SubGruposProduc);
 
         await InsertarOracleAsync(ProductosDestino);
 
@@ -62,7 +77,7 @@ public class ProductosMigration
 
         const string sql = """
             SELECT 
-                uni_medi_stock, agru_2, cuenta, produc, descrip_corta, descrip_larga, tipo
+                uni_medi_stock, agru_1, agru_2, cuenta, produc, descrip_corta, descrip_larga, tipo
             FROM PRODUCTOS
         """;
 
@@ -77,6 +92,10 @@ public class ProductosMigration
             var Productos = new ProductosSqlServer
             {
                 uni_medi_stock = reader["uni_medi_stock"]
+                    .ToString()!
+                    .Trim(),
+
+                agru_1 = reader["agru_1"]
                     .ToString()!
                     .Trim(),
 
@@ -167,6 +186,90 @@ public class ProductosMigration
         );
     } 
 
+    private async Task<Dictionary<string, int>> CargarGruposProducAsync()
+    {
+        var resultado = new Dictionary<string, int>(
+            StringComparer.OrdinalIgnoreCase);
+
+        await using var connection =
+            _oracleDatabase.CrearConexion();
+
+        await connection.OpenAsync();
+
+        const string sql = """
+            SELECT
+                GRUPOSPRODUCTOCODIGO,
+                GRUPOSPRODUCTOID
+            FROM GRUPOSPRODUCTO
+        """;
+
+        await using var command =
+            new OracleCommand(sql, connection);
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            var codigo =
+                reader["GRUPOSPRODUCTOCODIGO"]
+                    .ToString()!
+                    .Trim();
+
+            var id =
+                Convert.ToInt32(
+                    reader["GRUPOSPRODUCTOID"]);
+
+            resultado[codigo] = id;
+        }
+
+        return resultado;
+    }
+
+    private async Task<Dictionary<(int, string), int>> CargarSubGruposProducAsync()
+    {
+        var resultado = new Dictionary<(int, string), int>();
+
+        await using var connection =
+            _oracleDatabase.CrearConexion();
+
+        await connection.OpenAsync();
+
+        const string sql = """
+            SELECT
+                GRUPOSPRODUCTOID,
+                SUBGRUPOSPRODUCCODIGO,
+                SUBGRUPOSPRODUCID
+            FROM SUBGRUPOSPRODUC
+        """;
+
+        await using var command =
+            new OracleCommand(sql, connection);
+
+        await using var reader =
+            await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            var grupoId =
+                Convert.ToInt32(reader["GRUPOSPRODUCTOID"]);
+
+            var codigo =
+                reader["SUBGRUPOSPRODUCCODIGO"]
+                    .ToString()!
+                    .Trim()
+                    .ToUpperInvariant();
+
+            var id =
+                Convert.ToInt32(reader["SUBGRUPOSPRODUCID"]);
+
+            resultado.Add((grupoId, codigo), id);
+        }
+
+        return resultado;
+    }
+
+    /*
     private async Task<Dictionary<string, int>> CargarSubGruposProducAsync()
     {
         var resultado = new Dictionary<string, int>(
@@ -206,7 +309,45 @@ public class ProductosMigration
 
         return resultado;
     }       
+    */
+    private static int ObtenerGruposProducId(
+        string codigo,
+        Dictionary<string, int> GruposProduc)
+    {
 
+        if (GruposProduc.TryGetValue(
+                codigo.Trim(),
+                out var id))
+        {
+            return id;
+        }
+
+        throw new InvalidOperationException(
+            $"No se encontró GruposProduc con código '{codigo}'."
+        );
+    }
+
+    private static int ObtenerSubGruposProducId(
+        int grupoId,
+        string codigo,
+        Dictionary<(int, string), int> SubGruposProduc)
+    {
+        var clave = (
+            grupoId,
+            codigo.Trim().ToUpperInvariant()
+        );
+
+        if (SubGruposProduc.TryGetValue(clave, out var id))
+        {
+            return id;
+        }
+
+        throw new InvalidOperationException(
+            $"No se encontró SubGruposProduc con código '{codigo}' " +
+            $"dentro del grupo ID '{grupoId}'."
+        );
+    }
+    /*
     private static int ObtenerSubGruposProducId(
         string codigo,
         Dictionary<string, int> SubGruposProduc)
@@ -223,13 +364,19 @@ public class ProductosMigration
             $"No se encontró SubGruposProduc con código '{codigo}'."
         );
     }     
+    */
 
+
+    /*
     private List<ProductosOracle> Transformar(
         List<ProductosSqlServer> origen,
         Dictionary<string, int> UnidadesMedida,
         Dictionary<string, int> SubGruposProduc
     ){
         var resultado = new List<ProductosOracle>();
+
+        // agru_1 --> es el grupo
+        // agru_2 --> es el subgrupo
 
         foreach (var item in origen)
         {
@@ -248,6 +395,54 @@ public class ProductosMigration
 
         return resultado;
     }
+    */
+    private List<ProductosOracle> Transformar(
+        List<ProductosSqlServer> origen,
+        Dictionary<string, int> UnidadesMedida,
+        Dictionary<string, int> GruposProduc,
+        Dictionary<(int, string), int> SubGruposProduc)
+    {
+        var resultado = new List<ProductosOracle>();
+
+        foreach (var item in origen)
+        {
+            // agru_1 --> Grupo
+            // agru_2 --> Subgrupo
+
+            var grupoId = ObtenerGruposProducId(
+                item.agru_1,
+                GruposProduc
+            );
+
+            var subGrupoId = ObtenerSubGruposProducId(
+                grupoId,
+                item.agru_2,
+                SubGruposProduc
+            );
+
+            var Productos = new ProductosOracle
+            {
+                UNIDADESMEDIDAID = ObtenerUnidadesMedidaId(
+                    item.uni_medi_stock,
+                    UnidadesMedida
+                ),
+
+                SubGruposProducId = subGrupoId,
+
+                PLANCUENTASID = Convert.ToInt32(item.cuenta),
+
+                PRODUCTOSCODIGO = item.produc.Trim(),
+                PRODUCTOSDESCRIPCORTA = item.descrip_corta.Trim(),
+                PRODUCTOSDESCRIPLARGA = item.descrip_larga.Trim(),
+                PRODUCTOSTIPO = item.tipo.Trim()
+            };
+
+            resultado.Add(Productos);
+        }
+
+        return resultado;
+    }
+
 
     private async Task InsertarOracleAsync(
         List<ProductosOracle> Productos)

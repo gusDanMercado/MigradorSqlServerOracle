@@ -3,7 +3,7 @@ namespace MigradorSqlServerOracle.Models.SqlServer;
 public class ProductosSqlServer
 {
     public string uni_medi_stock { get; set; } = string.Empty;
-
+    public string agru_1 { get; set; } = string.Empty;
     public string agru_2 { get; set; } = string.Empty;
 
    public string? cuenta { get; set; }
