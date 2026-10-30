@@ -60,7 +60,8 @@ public class FuentesAbastecimientoMigration
                 rc.LAT,
                 rc.LNG
             FROM PRODUCCION.FUENTES_ABASTECIMIENTO fa
-            INNER JOIN DATASTORE5.RELFUENTES_CATASTROSDGI rc ON fa.ID_FUENTE = rc.ID_FUENTE
+            LEFT JOIN DATASTORE5.RELFUENTES_CATASTROSDGI rc ON fa.ID_FUENTE = rc.ID_FUENTE
+            WHERE fa.FCH_CAD IS NULL
         """;
 
         await using var command =
