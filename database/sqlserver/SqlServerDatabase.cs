@@ -35,22 +35,22 @@ public class SqlServerDatabase
 }
 */
 
-using Oracle.ManagedDataAccess.Client;
+using Microsoft.Data.SqlClient;
 
-namespace MigradorSqlServerOracle.Database.Oracle;
+namespace MigradorSqlServerOracle.Database.SqlServer;
 
-public class OracleDatabase
+public class SqlServerDatabase
 {
     private readonly string _connectionString;
 
-    public OracleDatabase(string connectionString)
+    public SqlServerDatabase(string connectionString)
     {
         _connectionString = connectionString;
     }
 
-    public OracleConnection CrearConexion()
+    public SqlConnection CrearConexion()
     {
-        return new OracleConnection(_connectionString);
+        return new SqlConnection(_connectionString);
     }
 
     public async Task ProbarConexionAsync()

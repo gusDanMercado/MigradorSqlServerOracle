@@ -249,11 +249,24 @@ try
 {
     Log.Information("Iniciando migrador.");
 
+    /*
     var sqlServerConnection =
         configuration.GetConnectionString("SqlServer");
 
     var oracleConnection =
         configuration.GetConnectionString("Oracle");
+    */
+    // SQL Server 2005 - Origen
+    var sqlServerConnection =
+        configuration.GetConnectionString("SqlServer");
+
+    // Oracle Docker - Destino
+    var oracleConnection =
+        configuration.GetConnectionString("Oracle");
+
+    // Oracle original - Origen
+    var oracleOrigenConnection =
+        configuration.GetConnectionString("OracleOrigen");
 
     // ============================================
     // PRUEBA CONEXIÓN SQL SERVER
@@ -316,6 +329,33 @@ try
     }
 
     // ============================================
+    // PRUEBA CONEXIÓN ORACLE ORIGEN
+    // ============================================
+
+    if (args.Length > 0 &&
+        args[0].Equals(
+            "fuentesabastecimiento",
+            StringComparison.OrdinalIgnoreCase))
+    {
+        if (string.IsNullOrWhiteSpace(oracleOrigenConnection))
+        {
+            Log.Error("Oracle origen: cadena de conexión pendiente.");
+
+            throw new InvalidOperationException(
+                "No se configuró OracleOrigen en appsettings.json.");
+        }
+
+        Log.Information("Probando conexión a Oracle origen...");
+
+        var oracleOrigenDatabase =
+            new OracleDatabase(oracleOrigenConnection);
+
+        await oracleOrigenDatabase.ProbarConexionAsync();
+
+        Log.Information("Oracle origen: conexión correcta.");
+    }    
+
+    // ============================================
     // EJECUCIÓN DE MIGRACIONES
     // ============================================
 
@@ -369,44 +409,66 @@ try
 
             case "localidades":
             {
+                // VALIDAR SQL SERVER ORIGEN
                 if (string.IsNullOrWhiteSpace(sqlServerConnection))
                 {
                     Log.Error(
                         "No se puede ejecutar la migración: falta la conexión a SQL Server."
                     );
-
                     break;
                 }
 
+                // VALIDAR ORACLE ORIGEN
+                if (string.IsNullOrWhiteSpace(oracleOrigenConnection))
+                {
+                    Log.Error(
+                        "No se puede ejecutar la migración: falta la conexión a Oracle origen."
+                    );
+                    break;
+                }
+
+                // VALIDAR ORACLE DESTINO
                 if (string.IsNullOrWhiteSpace(oracleConnection))
                 {
                     Log.Error(
-                        "No se puede ejecutar la migración: falta la conexión a Oracle."
+                        "No se puede ejecutar la migración: falta la conexión a Oracle destino."
                     );
-
                     break;
                 }
 
                 Log.Information(
-                    "Ejecutando migración LOCALIDADES -> LOCALIDADES."
+                    "Ejecutando migración GESTION.LOCALIDADES -> GXCONTABLE.LOCALIDADES."
                 );
 
                 var sqlServerDatabase =
                     new SqlServerDatabase(sqlServerConnection);
 
-                var oracleDatabase =
+                var oracleOrigenDatabase =
+                    new OracleDatabase(oracleOrigenConnection);
+
+                var oracleDestinoDatabase =
                     new OracleDatabase(oracleConnection);
 
+                // Probar Oracle origen
+                Log.Information("Probando conexión a Oracle origen...");
+
+                await oracleOrigenDatabase.ProbarConexionAsync();
+
+                Log.Information("Oracle origen: conexión correcta.");
+
+                // Ejecutar migración con las 3 conexiones
                 var migration =
                     new LocalidadesMigration(
                         sqlServerDatabase,
-                        oracleDatabase
+                        oracleOrigenDatabase,
+                        oracleDestinoDatabase
                     );
 
                 await migration.EjecutarAsync();
 
                 break;
             }
+
 
             case "categoriasiva":
             {
@@ -984,38 +1046,49 @@ try
 
             case "fuentesabastecimiento":
             {
-                if (string.IsNullOrWhiteSpace(sqlServerConnection))
+                // ============================================
+                // VALIDAR ORACLE ORIGEN
+                // ============================================
+
+                if (string.IsNullOrWhiteSpace(oracleOrigenConnection))
                 {
                     Log.Error(
-                        "No se puede ejecutar la migración: falta la conexión a SQL Server."
+                        "No se puede ejecutar la migración: falta la conexión a Oracle origen."
                     );
 
                     break;
                 }
 
+                // ============================================
+                // VALIDAR ORACLE DESTINO
+                // ============================================
+
                 if (string.IsNullOrWhiteSpace(oracleConnection))
                 {
                     Log.Error(
-                        "No se puede ejecutar la migración: falta la conexión a Oracle."
+                        "No se puede ejecutar la migración: falta la conexión a Oracle destino."
                     );
 
                     break;
                 }
 
                 Log.Information(
-                    "Ejecutando migración FUENTES_ABASTECIMIENTO -> FUENTESABASTECIMIENTO."
+                    "Ejecutando migración PRODUCCION.FUENTES_ABASTECIMIENTO -> GXCONTABLE.FUENTESABASTECIMIENTO."
                 );
 
-                var sqlServerDatabase =
-                    new SqlServerDatabase(sqlServerConnection);
+                // Oracle original - Origen
+                var oracleOrigenDatabase =
+                    new OracleDatabase(oracleOrigenConnection);
 
-                var oracleDatabase =
+                // Oracle Docker - Destino
+                var oracleDestinoDatabase =
                     new OracleDatabase(oracleConnection);
 
+                // Migración Oracle -> Oracle
                 var migration =
                     new FuentesAbastecimientoMigration(
-                        //sqlServerDatabase,
-                        oracleDatabase
+                        oracleOrigenDatabase,
+                        oracleDestinoDatabase
                     );
 
                 await migration.EjecutarAsync();

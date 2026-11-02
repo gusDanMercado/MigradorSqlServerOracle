@@ -10,12 +10,24 @@ namespace MigradorSqlServerOracle.Migrations;
 
 public class FuentesAbastecimientoMigration
 {
+    /*
     private readonly OracleDb _oracleDatabase;
 
     public FuentesAbastecimientoMigration(
         OracleDb oracleDatabase)
     {
         _oracleDatabase = oracleDatabase;
+    }
+    */
+    private readonly OracleDb _oracleOrigen;
+    private readonly OracleDb _oracleDestino;
+
+    public FuentesAbastecimientoMigration(
+        OracleDb oracleOrigen,
+        OracleDb oracleDestino)
+    {
+        _oracleOrigen = oracleOrigen;
+        _oracleDestino = oracleDestino;
     }
 
     public async Task EjecutarAsync()
@@ -47,7 +59,11 @@ public class FuentesAbastecimientoMigration
             new List<FuentesAbastecimientoOracle>();
 
         await using var connection =
+            _oracleOrigen.CrearConexion();
+        /*
+        await using var connection =
             _oracleDatabase.CrearConexion();
+        */
 
         await connection.OpenAsync();
 
@@ -111,7 +127,12 @@ public class FuentesAbastecimientoMigration
         var resultado = new Dictionary<int, int>();
 
         await using var connection =
+            _oracleDestino.CrearConexion();
+
+        /*        
+        await using var connection =
             _oracleDatabase.CrearConexion();
+        */
 
         await connection.OpenAsync();
 
@@ -167,7 +188,11 @@ public class FuentesAbastecimientoMigration
     )
     {
         await using var connection =
+            _oracleDestino.CrearConexion();
+        /*
+        await using var connection =
             _oracleDatabase.CrearConexion();
+        */
 
         await connection.OpenAsync();
 

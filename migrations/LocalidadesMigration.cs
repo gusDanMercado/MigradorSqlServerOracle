@@ -14,6 +14,7 @@ namespace MigradorSqlServerOracle.Migrations;
 
 public class LocalidadesMigration
 {
+    /*
     private readonly SqlServerDatabase _sqlServerDatabase;
 
     private readonly OracleDb _oracleDatabase;
@@ -25,6 +26,21 @@ public class LocalidadesMigration
         _sqlServerDatabase = sqlServerDatabase;        
         _oracleDatabase = oracleDatabase;
     }
+    */
+    private readonly SqlServerDatabase _sqlServerDatabase;
+    private readonly OracleDb _oracleOrigen;
+    private readonly OracleDb _oracleDestino;
+
+    public LocalidadesMigration(
+        SqlServerDatabase sqlServerDatabase,
+        OracleDb oracleOrigen,
+        OracleDb oracleDestino)
+    {
+        _sqlServerDatabase = sqlServerDatabase;
+        _oracleOrigen = oracleOrigen;
+        _oracleDestino = oracleDestino;
+    }
+
 
     public async Task EjecutarAsync()
     {
@@ -109,7 +125,11 @@ public class LocalidadesMigration
             new List<LocalidadesOracle>();
 
         await using var connection =
+            _oracleOrigen.CrearConexion();
+        /*
+        await using var connection =
             _oracleDatabase.CrearConexion();
+        */
 
         await connection.OpenAsync();
 
@@ -118,11 +138,11 @@ public class LocalidadesMigration
                 L.ID_LOC,
                 L.DESC_LOC,
                 L.COD_POSTAL,
-                UO.CODIGO_AM,
+                UO.CODIGO_AM
             FROM GESTION.LOCALIDADES L
             LEFT JOIN GESTION.UNIDADOPERATIVA UO ON L.ID_UOP = UO.ID_UOP  
-            WHERE ID_PROV = 1
-            ORDER BY ID_LOC
+            WHERE L.ID_PROV = 1
+            ORDER BY L.ID_LOC
         """;
 
         await using var command =
@@ -230,8 +250,11 @@ private async Task<Dictionary<string, string?>> LeerCodigosLocalidadesSqlServerA
         List<LocalidadesOracle> localidades)
     {
         await using var connection =
+            _oracleDestino.CrearConexion();        
+        /*
+        await using var connection =
             _oracleDatabase.CrearConexion();
-
+        */
         await connection.OpenAsync();
 
         using var transaction =
